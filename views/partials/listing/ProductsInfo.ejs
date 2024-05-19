@@ -12,13 +12,14 @@
             <h5 class="w-[18%]"><%= product.added_date.toString().substring(0, 15) %></h5>
             <h5 class="w-[18%]"><%= product.price %> $</h5>
             <h5 class="w-[18%]"><%= product.category %> </h5>
+            <h5 class="w-[18%]"><%= stores.find(store => store.sid === product.sid).address %></h5>
             <div class="w-[18%] flex justify-center items-center gap-2">
-                <form action="/edit">
+                <form action="/edit/<%= product.pid %>" method="get">
                     <button class="bg-[#33E67A] font-bold rounded-lg text-black px-3 text-xs py-1">
                         Edit
                     </button>
                 </form>
-                <form action="/delete">
+                <form action="/delete/<%= product.pid %>" method="post">
                     <button class="bg-[#33E67A] font-bold rounded-lg text-black px-3 text-xs py-1">
                         Delete
                     </button>

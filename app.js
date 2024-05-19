@@ -130,146 +130,133 @@ app.get("/products", checkAuth, (req, res) => {
 });
 
 app.get("/inventory", checkAuth, (req, res) => {
-  const query = `
-  SELECT 
-    p.pid,
-    c.category_name AS category,
-    p.bid,
-    p.sid,
-    p.pname,
-    p.p_stock,
-    p.price,
-    p.added_date,
-    p.image
-  FROM 
-    Product p
-  JOIN
-    categories c ON p.cid = c.cid;
-`;
-
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Error retrieving products");
-    } else {
-      res.render("inventory", { products: results });
-    }
-  });
-});
-
-app.get("/logout", (req, res) => {
-  res.clearCookie("loggedIn");
-  res.redirect("/");
-});
-
-app.get("/edit/:pid", checkAuth, (req, res) => {
-  const productId = req.params.pid;
-  const productQuery = `
+  const productsQuery = `
     SELECT 
       p.pid,
-      p.cid,
+      c.category_name AS category,
       p.bid,
       p.sid,
       p.pname,
       p.p_stock,
       p.price,
       p.added_date,
-      p.image,
-      c.category_name AS category,
-      b.bname AS brand,
-      s.sname AS store
+      p.image
     FROM 
       Product p
     JOIN
-      categories c ON p.cid = c.cid
-    JOIN
-      brands b ON p.bid = b.bid
-    JOIN
-      stores s ON p.sid = s.sid
-    WHERE
-      p.pid = ?;
+      categories c ON p.cid = c.cid;
   `;
+
+  const storesQuery = `SELECT * FROM stores`;
+
+  db.query(productsQuery, (err1, products) => {
+    if (err1) {
+      console.error(err1);
+      return res.status(500).send("Error retrieving products");
+    }
+
+    db.query(storesQuery, (err2, stores) => {
+      if (err2) {
+        console.error(err2);
+        return res.status(500).send("Error retrieving stores");
+      }
+
+      res.render("inventory", { products, stores }); // Make sure 'stores' is passed here
+    });
+  });
+});
+
+
+
+app.get("/logout", (req, res) => {
+  res.clearCookie("loggedIn");
+  res.redirect("/");
+})
+
+
+app.get("/edit/:pid", checkAuth, (req, res) => {
+  const { pid } = req.params;
   const categoryQuery = "SELECT cid, category_name FROM categories";
   const brandQuery = "SELECT bid, bname FROM brands";
-  const storeQuery = "SELECT sid, sname FROM stores";
+  const storeQuery = "SELECT * FROM stores";
+  const productQuery = "SELECT * FROM product WHERE pid = ?";
 
-  db.query(productQuery, [productId], (err1, productResults) => {
+  db.query(categoryQuery, (err1, categories) => {
     if (err1) {
-      console.error("Error retrieving product:", err1);
-      res.status(500).send("Error retrieving product");
+      console.error("Error retrieving categories:", err1);
+      res.status(500).send("Error retrieving categories");
       return;
     }
 
-    if (productResults.length === 0) {
-      res.status(404).send("Product not found");
-      return;
-    }
-
-    const product = productResults[0];
-
-    db.query(categoryQuery, (err2, categories) => {
+    db.query(brandQuery, (err2, brands) => {
       if (err2) {
-        console.error("Error retrieving categories:", err2);
-        res.status(500).send("Error retrieving categories");
+        console.error("Error retrieving brands:", err2);
+        res.status(500).send("Error retrieving brands");
         return;
       }
 
-      db.query(brandQuery, (err3, brands) => {
+      db.query(storeQuery, (err3, stores) => {
         if (err3) {
-          console.error("Error retrieving brands:", err3);
-          res.status(500).send("Error retrieving brands");
+          console.error("Error retrieving stores:", err3);
+          res.status(500).send("Error retrieving stores");
           return;
         }
 
-        db.query(storeQuery, (err4, stores) => {
+        db.query(productQuery, [pid], (err4, product) => {
           if (err4) {
-            console.error("Error retrieving stores:", err4);
-            res.status(500).send("Error retrieving stores");
+            console.error("Error retrieving product:", err4);
+            res.status(500).send("Error retrieving product");
             return;
           }
 
-          res.render("edit", { product, categories, brands, stores });
+          if (product.length === 0) {
+            res.status(404).send("Product not found");
+            return;
+          }
+
+          res.render("editPage", { categories, brands, stores, product: product[0] });
         });
       });
     });
   });
 });
 
-
-app.post("/edit/:pid", checkAuth, upload.single('productImage'), (req, res) => {
-  const productId = req.params.pid;
+app.post("/edit/:pid", checkAuth, (req, res) => {
+  const { pid } = req.params;
   const { cid, bid, sid, pname, p_stock, price, added_date } = req.body;
-  let imageQueryPart = '';
-  let queryParams = [cid, bid, sid, pname, p_stock, price, added_date, productId];
+  const imageName = req.file ? req.file.originalname : null;
 
-  if (req.file) {
-    const image = req.file.filename;
-    imageQueryPart = ', image = ?';
-    queryParams = [cid, bid, sid, pname, p_stock, price, added_date, image, productId];
-  }
-
-  const updateQuery = `
-    UPDATE Product
-    SET
-      cid = ?,
-      bid = ?,
-      sid = ?,
-      pname = ?,
-      p_stock = ?,
-      price = ?,
-      added_date = ?${imageQueryPart}
-    WHERE
-      pid = ?;
+  // Update the product in the database
+  const updateProductQuery = `
+    UPDATE product 
+    SET cid = ?, bid = ?, sid = ?, pname = ?, p_stock = ?, price = ?, added_date = ?, image = ? 
+    WHERE pid = ?
   `;
+  const values = [cid, bid, sid, pname, p_stock, price, added_date, imageName, pid];
 
-  db.query(updateQuery, queryParams, (err, result) => {
+  db.query(updateProductQuery, values, (err, result) => {
     if (err) {
       console.error("Error updating product:", err);
       res.status(500).send("Error updating product");
+    } else {
+      res.redirect("/products");
+    }
+  });
+});
+
+
+
+app.post('/delete/:pid', checkAuth, (req, res) => {
+  const { pid } = req.params;
+  const deleteQuery = 'DELETE FROM Product WHERE pid = ?';
+
+  db.query(deleteQuery, [pid], (err, result) => {
+    if (err) {
+      console.error('Error deleting product:', err);
+      res.status(500).send('Error deleting product');
       return;
     }
-
-    res.redirect("/products");
+    res.redirect('/products');
   });
 });
 
