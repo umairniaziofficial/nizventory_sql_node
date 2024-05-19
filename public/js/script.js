@@ -2,7 +2,7 @@ const boxes = document.querySelectorAll(".scroll-effect");
 const windowHeight = window.innerHeight;
 let ticking = false;
 const counters = [
-  { id: 'totalProducts', endValue: 900, interval: 10 },
+  { id: 'totalProducts', endValue: 550, interval: 10 },
   { id: 'totalSuppliers', endValue: 500, interval: 10},
   { id: 'totalCustomers', endValue: 600 , interval: 10 } 
 ];
@@ -57,10 +57,9 @@ function startCounter(item, increaseValue, total, intervalTime, counterId) {
   const intervalId = setInterval(() => {
     if (count < total) {
       count += increaseValue;
-      item.innerHTML = count+" K";
+      item.innerHTML = count + " K";
     } else {
       clearInterval(intervalId);
-      countingInProgress[counterId] = false;
     }
   }, intervalTime);
 }
