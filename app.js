@@ -58,6 +58,9 @@ const redirectIfLoggedIn = (req, res, next) => {
   }
 };
 
+
+// ? GET REQUESTS
+
 app.get("/", redirectIfLoggedIn, (req, res) => {
   res.render("index", { page: "login" });
 });
@@ -69,6 +72,8 @@ app.get("/signup", redirectIfLoggedIn, (req, res) => {
 app.get("/home", checkAuth, (req, res) => {
   res.render("home");
 });
+
+// ? Complex Get Requests
 
 app.get("/insert", checkAuth, (req, res) => {
   const categoryQuery = "SELECT cid, category_name FROM categories";
@@ -180,19 +185,20 @@ app.get("/inventory", checkAuth, (req, res) => {
 app.get("/edit/category/:cid", checkAuth, (req, res) => {
   const cid = req.params.cid;
   const categoryQuery = "SELECT cid, category_name FROM categories WHERE cid = ?";
-  
+  const pageTitle = "Category";
   db.query(categoryQuery, [cid], (err, category) => {
     if (err) {
       console.error("Error retrieving category:", err);
       res.status(500).send("Error retrieving category");
       return;
     }
-    res.render("edit_category", { category: category[0] });
+    res.render("edit_template", { category: category[0] ,pageTitle: pageTitle});
   });
 });
 
 app.get("/edit/brand/:bid", checkAuth, (req, res) => {
   const bid = req.params.bid;
+  const pageTitle = "Brand";
   const brandQuery = "SELECT bid, bname FROM brands WHERE bid = ?";
   
   db.query(brandQuery, [bid], (err, brand) => {
@@ -201,7 +207,7 @@ app.get("/edit/brand/:bid", checkAuth, (req, res) => {
       res.status(500).send("Error retrieving brand");
       return;
     }
-    res.render("edit_brand", { brand: brand[0] });
+    res.render("edit_template", { brand: brand[0],pageTitle:pageTitle });
   });
 });
 
@@ -236,8 +242,17 @@ app.get("/brand", checkAuth, (req, res) => {
 
 app.get("/store",checkAuth,(req,res)=>
 {
-    const pageTitle = "Store";
-    res.render("bcs_insertions",{pageTitle});
+  const pageTitle = "Store";
+  const Query = "SELECT sid,sname, address,mobno FROM stores";
+
+  db.query(Query, (err, Data) => {
+    if (err) {
+      console.error("Error retrieving brands:", err);
+      res.status(500).send("Error retrieving brands");
+      return;
+    }
+    res.render("bcs_insertions", { pageTitle, TheData: Data });
+  });
 })
 
 
@@ -294,6 +309,21 @@ app.get("/edit/:pid", checkAuth, (req, res) => {
   });
 });
 
+app.get("/edit/store/:sid", checkAuth, (req, res) => {
+  const sid = req.params.sid;
+  const storeQuery = "SELECT sid, sname, address, mobno FROM stores WHERE sid = ?";
+  const pageTitle = "Store";
+  db.query(storeQuery, [sid], (err, store) => {
+    if (err) {
+      console.error("Error retrieving store:", err);
+      res.status(500).send("Error retrieving store");
+      return;
+    }
+    res.render("edit_template", { store: store[0],pageTitle: pageTitle });
+  });
+});
+
+// ? Post Requests
 
 app.post("/brand", (req, res) => {
   const { pname } = req.body;
@@ -496,6 +526,25 @@ app.post("/insert", (req, res) => {
     });
   });
 });
+
+app.post("/edit/store/:sid", (req, res) => {
+  const sid = req.params.sid;
+  const { sname, saddress, snumber } = req.body;
+
+  const updateStoreQuery = 'UPDATE stores SET sname = ?, address = ?, mobno = ? WHERE sid = ?';
+  
+  db.query(updateStoreQuery, [sname, saddress, snumber, sid], (err, result) => {
+    if (err) {
+      console.error('Error updating store:', err);
+      res.status(500).send('Error updating store');
+      return;
+    }
+    res.redirect('/store');
+  });
+});
+
+
+// ? PORT Listener
 
 
 app.listen(PORT, () => {

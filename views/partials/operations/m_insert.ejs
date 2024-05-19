@@ -29,10 +29,13 @@
                 Submit
             </button>
         </form>
-            <% if (pageTitle.toLowerCase() === "category" || pageTitle.toLowerCase() === "brand") { %>
-                <%- include('./info_headers.ejs', { heading: [`${pageTitle} ID`, `${pageTitle} Name`, "Action"] }) %>
-                <%- include('./info_data.ejs', { products: TheData, pageTitle: pageTitle }) %>
-            <% } %>
-       
+        <% if (pageTitle.toLowerCase() === "category" || pageTitle.toLowerCase() === "brand") { %>
+            <%- include('./info_headers.ejs', { heading: [`${pageTitle} ID`, `${pageTitle} Name`, "Action"] }) %>
+            <%- include('./info_data.ejs', { products: TheData, pageTitle: pageTitle }) %>
+        <% } else if (pageTitle.toLowerCase() === "store") { %>
+            <%- include('./info_headers.ejs', { heading: [`${pageTitle} ID`, `${pageTitle} Name`,`${pageTitle} Address`,`${pageTitle} Mob No.`, "Action"] }) %>
+            <%- include('./info_data.ejs', { products: TheData, pageTitle: pageTitle }) %>
+        <% } %>
+        
     </div>
 </div>
