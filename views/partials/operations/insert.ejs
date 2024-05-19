@@ -1,116 +1,72 @@
 <div class="min-h-screen flex justify-center items-center">
-  <div
-    class="w-[90%] h-[90%] p-8 rounded-lg shadow-lg flex flex-col justify-center items-center"
-  >
+  <div class="w-[90%] h-[90%] p-8 rounded-lg shadow-lg flex flex-col justify-center items-center">
     <h1 class="text-5xl text-white mb-8">Insert Product</h1>
-    <form
-      action="/insert"
-      method="POST"
-      enctype="multipart/form-data"
-      class="space-y-4 w-full max-w-md"
-    >
+    <form action="/insert" method="POST" enctype="multipart/form-data" class="space-y-4 w-full max-w-md">
       <div>
         <label for="cid" class="text-white">Category:</label>
-        <select
-          id="cid"
-          name="cid"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        >
-          <% categories.forEach(category => { %>
-          <option value="<%= category.cid %>">
-            <%= category.category_name %>
-          </option>
-          <% }); %>
+        <select id="cid" name="cid" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none">
+          <% categories.forEach(category=> { %>
+            <option value="<%= category.cid %>">
+              <%= category.category_name %>
+            </option>
+            <% }); %>
         </select>
       </div>
 
       <div>
         <label for="bid" class="text-white">Brand ID:</label>
-        <select
-          id="bid"
-          name="bid"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        >
-          <% brands.forEach(brand => { %>
-          <option value="<%= brand.bid %>"><%= brand.bname %></option>
-          <% }); %>
+        <select id="bid" name="bid" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none">
+          <% brands.forEach(brand=> { %>
+            <option value="<%= brand.bid %>">
+              <%= brand.bname %>
+            </option>
+            <% }); %>
         </select>
       </div>
       <div>
         <label for="sid" class="text-white">Store:</label>
-        <select
-          id="sid"
-          name="sid"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        >
-          <% stores.forEach(store => { %>
-          <option value="<%= store.sid %>"><%= store.address %></option>
-          <% }); %>
+        <select id="sid" name="sid" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none">
+          <% stores.forEach(store=> { %>
+            <option value="<%= store.sid %>">
+              <%= store.address %>
+            </option>
+            <% }); %>
         </select>
       </div>
 
       <div>
         <label for="pname" class="text-white">Product Name:</label>
-        <input
-          type="text"
-          id="pname"
-          name="pname"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        />
+        <input type="text" id="pname" name="pname" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
       </div>
 
       <div>
         <label for="p_stock" class="text-white">Stock Quantity:</label>
-        <input
-          type="number"
-          id="p_stock"
-          name="p_stock"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        />
+        <input type="number" id="p_stock" name="p_stock" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
       </div>
 
       <div>
         <label for="price" class="text-white">Price:</label>
-        <input
-          type="number"
-          id="price"
-          name="price"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        />
+        <input type="number" id="price" name="price" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
       </div>
 
       <div>
         <label for="added_date" class="text-white">Added Date:</label>
-        <input
-          type="date"
-          id="added_date"
-          name="added_date"
-          required
-          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none"
-        />
+        <input type="date" id="added_date" name="added_date" required
+          class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
       </div>
 
       <div>
         <label for="productImage" class="text-white">Product Image:</label>
-        <input
-          type="file"
-          id="productImage"
-          name="productImage"
-          accept="image/*"
-          class="mt-1"
-        />
+        <input type="file" id="productImage" name="productImage" accept="image/*" class="mt-1" />
       </div>
 
-      <button
-        type="submit"
-        class="bg-[#33e67a] hover:bg-[#30995a] text-black font-bold py-2 px-4 rounded w-full"
-      >
+      <button type="submit" class="bg-[#33e67a] hover:bg-[#30995a] text-black font-bold py-2 px-4 rounded w-full">
         Submit
       </button>
     </form>

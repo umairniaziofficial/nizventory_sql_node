@@ -23,6 +23,8 @@ db.connect((err) => {
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cookieParser());
@@ -102,7 +104,7 @@ app.get("/insert", checkAuth, (req, res) => {
 
 
 app.get("/products", checkAuth, (req, res) => {
-  const query = `
+  const productsQuery = `
     SELECT 
       p.pid,
       c.category_name AS category,
@@ -119,13 +121,22 @@ app.get("/products", checkAuth, (req, res) => {
       categories c ON p.cid = c.cid;
   `;
 
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Error retrieving products");
-    } else {
-      res.render("products", { products: results });
+  const storesQuery = `SELECT * FROM stores`;
+
+  db.query(productsQuery, (err1, products) => {
+    if (err1) {
+      console.error(err1);
+      return res.status(500).send("Error retrieving products");
     }
+
+    db.query(storesQuery, (err2, stores) => {
+      if (err2) {
+        console.error(err2);
+        return res.status(500).send("Error retrieving stores");
+      }
+
+      res.render("products", { products, stores });
+    });
   });
 });
 
@@ -161,11 +172,73 @@ app.get("/inventory", checkAuth, (req, res) => {
         return res.status(500).send("Error retrieving stores");
       }
 
-      res.render("inventory", { products, stores }); // Make sure 'stores' is passed here
+      res.render("inventory", { products, stores });
     });
   });
 });
 
+app.get("/edit/category/:cid", checkAuth, (req, res) => {
+  const cid = req.params.cid;
+  const categoryQuery = "SELECT cid, category_name FROM categories WHERE cid = ?";
+  
+  db.query(categoryQuery, [cid], (err, category) => {
+    if (err) {
+      console.error("Error retrieving category:", err);
+      res.status(500).send("Error retrieving category");
+      return;
+    }
+    res.render("edit_category", { category: category[0] });
+  });
+});
+
+app.get("/edit/brand/:bid", checkAuth, (req, res) => {
+  const bid = req.params.bid;
+  const brandQuery = "SELECT bid, bname FROM brands WHERE bid = ?";
+  
+  db.query(brandQuery, [bid], (err, brand) => {
+    if (err) {
+      console.error("Error retrieving brand:", err);
+      res.status(500).send("Error retrieving brand");
+      return;
+    }
+    res.render("edit_brand", { brand: brand[0] });
+  });
+});
+
+app.get("/category", checkAuth, (req, res) => {
+  const pageTitle = "Category";
+  const Query = "SELECT cid, category_name FROM categories";
+
+  db.query(Query, (err, Data) => {
+    if (err) {
+      console.error("Error retrieving brands:", err);
+      res.status(500).send("Error retrieving brands");
+      return;
+    }
+    res.render("bcs_insertions", { pageTitle, TheData: Data });
+  });
+});
+
+
+app.get("/brand", checkAuth, (req, res) => {
+  const pageTitle = "Brand";
+  const brandQuery = "SELECT bid, bname FROM brands";
+
+  db.query(brandQuery, (err, brandData) => {
+    if (err) {
+      console.error("Error retrieving brands:", err);
+      res.status(500).send("Error retrieving brands");
+      return;
+    }
+    res.render("bcs_insertions", { pageTitle, TheData: brandData });
+  });
+});
+
+app.get("/store",checkAuth,(req,res)=>
+{
+    const pageTitle = "Store";
+    res.render("bcs_insertions",{pageTitle});
+})
 
 
 app.get("/logout", (req, res) => {
@@ -221,12 +294,69 @@ app.get("/edit/:pid", checkAuth, (req, res) => {
   });
 });
 
+
+app.post("/brand", (req, res) => {
+  const { pname } = req.body;
+  const insertBrandQuery = "INSERT INTO brands (bname) VALUES (?)";
+  
+  db.query(insertBrandQuery, [pname], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Error adding brand");
+    } else {
+      return res.status(201).send("Brand added successfully");
+    }
+  });
+});
+
+app.post("/category", (req, res) => {
+  const { pname } = req.body;
+  const insertCategoryQuery = "INSERT INTO categories (category_name) VALUES (?)";
+  
+  db.query(insertCategoryQuery, [pname], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Error adding category");
+    } else {
+      return res.redirect("/inventory");
+    }
+  });
+});
+
+app.post('/edit/category/:cid', (req, res) => {
+  const cid = req.params.cid;
+  const { category_name } = req.body;
+
+  const updateCategoryQuery = 'UPDATE categories SET category_name = ? WHERE cid = ?';
+  db.query(updateCategoryQuery, [category_name, cid], (err, result) => {
+    if (err) {
+      console.error('Error updating category:', err);
+      res.status(500).send('Error updating category');
+      return;
+    }
+    res.redirect('/category');
+  });
+});
+
+app.post("/store", (req, res) => {
+  const { sname, saddress, snumber } = req.body;
+  const insertStoreQuery = "INSERT INTO stores (sname, address, mobno) VALUES (?, ?, ?)";
+  
+  db.query(insertStoreQuery, [sname, saddress, snumber], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Error adding store");
+    } else {
+      return res.status(201).send("Store added successfully");
+    }
+  });
+});
+
 app.post("/edit/:pid", checkAuth, (req, res) => {
   const { pid } = req.params;
   const { cid, bid, sid, pname, p_stock, price, added_date } = req.body;
   const imageName = req.file ? req.file.originalname : null;
 
-  // Update the product in the database
   const updateProductQuery = `
     UPDATE product 
     SET cid = ?, bid = ?, sid = ?, pname = ?, p_stock = ?, price = ?, added_date = ?, image = ? 
@@ -243,8 +373,52 @@ app.post("/edit/:pid", checkAuth, (req, res) => {
     }
   });
 });
+app.post("/edit/brand/:bid", (req, res) => {
+  const bid = req.params.bid;
+  const { bname } = req.body;
+
+  const updateBrandQuery = 'UPDATE brands SET bname = ? WHERE bid = ?';
+  
+  db.query(updateBrandQuery, [bname, bid], (err, result) => {
+    if (err) {
+      console.error('Error updating brand:', err);
+      res.status(500).send('Error updating brand');
+      return;
+    }
+    res.redirect('/brand');
+  });
+});
 
 
+app.post("/delete/brand/:bid", (req, res) => {
+  const bid = req.params.bid;
+
+  const deleteBrandQuery = 'DELETE FROM brands WHERE bid = ?';
+
+  db.query(deleteBrandQuery, [bid], (err, result) => {
+    if (err) {
+      console.error('Error deleting brand:', err);
+      res.status(500).send('Error deleting brand');
+      return;
+    }
+    res.redirect('/brand');
+  });
+});
+
+
+app.post('/delete/category/:cid', checkAuth, (req, res) => {
+  const { cid } = req.params;
+  const deleteCategoryQuery = 'DELETE FROM categories WHERE cid = ?';
+
+  db.query(deleteCategoryQuery, [cid], (err, result) => {
+    if (err) {
+      console.error('Error deleting category:', err);
+      res.status(500).send('Error deleting category');
+      return;
+    }
+    res.redirect('/category');
+  });
+});
 
 app.post('/delete/:pid', checkAuth, (req, res) => {
   const { pid } = req.params;
