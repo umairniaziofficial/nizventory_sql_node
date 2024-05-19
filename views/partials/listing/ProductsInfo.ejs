@@ -1,7 +1,7 @@
 <% products.forEach(product => { %>
     <div class="w-full productItem" data-product-name="<%= product.pname %>">
         <div class="w-[90%] mx-auto rounded-lg bg-[#1e1f23] text-[#adadad] flex mt-12 text-center h-12 items-center shadow-lg hover:contrast-125 transition ease-in-out duration-300 cursor-pointer">
-            <img src="images/shirt.svg" alt="" class="w-[18%] h-2/3" />
+            <img src="data:image/jpeg;base64, <%= product.image %>" alt="<%= product.pname %> Image" class="w-[18%] h-2/3" />
             <h5 class="w-[18%]"><%= product.pid %></h5>
             <h5 class="w-[18%]"><%= product.pname %></h5>
             <h5 class="w-[18%]"><%= product.p_stock %></h5>
