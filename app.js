@@ -32,7 +32,7 @@ const storage = multer.diskStorage({
     cb(null, "./public/images/databaseImages");
   },
   filename: function (req, file, cb) {
-    cb(null,file.originalname);
+    cb(null, file.originalname);
   },
 });
 
@@ -69,8 +69,37 @@ app.get("/home", checkAuth, (req, res) => {
 });
 
 app.get("/insert", checkAuth, (req, res) => {
-  res.render("insert");
+  const categoryQuery = "SELECT cid, category_name FROM categories";
+  const brandQuery = "SELECT bid, bname FROM brands";
+  const storeQuery = "SELECT * FROM stores";
+
+  db.query(categoryQuery, (err1, categories) => {
+    if (err1) {
+      console.error("Error retrieving categories:", err1);
+      res.status(500).send("Error retrieving categories");
+      return;
+    }
+
+    db.query(brandQuery, (err2, brands) => {
+      if (err2) {
+        console.error("Error retrieving brands:", err2);
+        res.status(500).send("Error retrieving brands");
+        return;
+      }
+
+      db.query(storeQuery, (err3, stores) => {
+        if (err3) {
+          console.error("Error retrieving stores:", err3);
+          res.status(500).send("Error retrieving stores");
+          return;
+        }
+
+        res.render("insert", { categories, brands, stores });
+      });
+    });
+  });
 });
+
 
 app.get("/products", checkAuth, (req, res) => {
   const query = `
@@ -101,7 +130,23 @@ app.get("/products", checkAuth, (req, res) => {
 });
 
 app.get("/inventory", checkAuth, (req, res) => {
-  const query = "SELECT * FROM product";
+  const query = `
+  SELECT 
+    p.pid,
+    c.category_name AS category,
+    p.bid,
+    p.sid,
+    p.pname,
+    p.p_stock,
+    p.price,
+    p.added_date,
+    p.image
+  FROM 
+    Product p
+  JOIN
+    categories c ON p.cid = c.cid;
+`;
+
   db.query(query, (err, results) => {
     if (err) {
       console.error(err);
@@ -117,19 +162,118 @@ app.get("/logout", (req, res) => {
   res.redirect("/");
 });
 
-app.get("/products/:productId", (req, res) => {
-  const productId = req.params.productId;
-  const query = "SELECT * FROM product WHERE pid = ?";
-  db.query(query, [productId], (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Error retrieving product information");
-    } else {
-      const product = results[0];
-      res.render("productInfo", { product });
+app.get("/edit/:pid", checkAuth, (req, res) => {
+  const productId = req.params.pid;
+  const productQuery = `
+    SELECT 
+      p.pid,
+      p.cid,
+      p.bid,
+      p.sid,
+      p.pname,
+      p.p_stock,
+      p.price,
+      p.added_date,
+      p.image,
+      c.category_name AS category,
+      b.bname AS brand,
+      s.sname AS store
+    FROM 
+      Product p
+    JOIN
+      categories c ON p.cid = c.cid
+    JOIN
+      brands b ON p.bid = b.bid
+    JOIN
+      stores s ON p.sid = s.sid
+    WHERE
+      p.pid = ?;
+  `;
+  const categoryQuery = "SELECT cid, category_name FROM categories";
+  const brandQuery = "SELECT bid, bname FROM brands";
+  const storeQuery = "SELECT sid, sname FROM stores";
+
+  db.query(productQuery, [productId], (err1, productResults) => {
+    if (err1) {
+      console.error("Error retrieving product:", err1);
+      res.status(500).send("Error retrieving product");
+      return;
     }
+
+    if (productResults.length === 0) {
+      res.status(404).send("Product not found");
+      return;
+    }
+
+    const product = productResults[0];
+
+    db.query(categoryQuery, (err2, categories) => {
+      if (err2) {
+        console.error("Error retrieving categories:", err2);
+        res.status(500).send("Error retrieving categories");
+        return;
+      }
+
+      db.query(brandQuery, (err3, brands) => {
+        if (err3) {
+          console.error("Error retrieving brands:", err3);
+          res.status(500).send("Error retrieving brands");
+          return;
+        }
+
+        db.query(storeQuery, (err4, stores) => {
+          if (err4) {
+            console.error("Error retrieving stores:", err4);
+            res.status(500).send("Error retrieving stores");
+            return;
+          }
+
+          res.render("edit", { product, categories, brands, stores });
+        });
+      });
+    });
   });
 });
+
+
+app.post("/edit/:pid", checkAuth, upload.single('productImage'), (req, res) => {
+  const productId = req.params.pid;
+  const { cid, bid, sid, pname, p_stock, price, added_date } = req.body;
+  let imageQueryPart = '';
+  let queryParams = [cid, bid, sid, pname, p_stock, price, added_date, productId];
+
+  if (req.file) {
+    const image = req.file.filename;
+    imageQueryPart = ', image = ?';
+    queryParams = [cid, bid, sid, pname, p_stock, price, added_date, image, productId];
+  }
+
+  const updateQuery = `
+    UPDATE Product
+    SET
+      cid = ?,
+      bid = ?,
+      sid = ?,
+      pname = ?,
+      p_stock = ?,
+      price = ?,
+      added_date = ?${imageQueryPart}
+    WHERE
+      pid = ?;
+  `;
+
+  db.query(updateQuery, queryParams, (err, result) => {
+    if (err) {
+      console.error("Error updating product:", err);
+      res.status(500).send("Error updating product");
+      return;
+    }
+
+    res.redirect("/products");
+  });
+});
+
+
 app.post("/insert", (req, res) => {
   const { cid, bid, sid, pname, p_stock, price, added_date } = req.body;
   const imageName = req.file ? req.file.originalname : null;
@@ -192,37 +336,6 @@ app.post("/insert", (req, res) => {
   });
 });
 
-app.put("/products/:productId", (req, res) => {
-  const productId = req.params.productId;
-  const { cid, bid, sid, pname, p_stock, price, added_date, image } = req.body;
-  const query =
-    "UPDATE product SET cid = ?, bid = ?, sid = ?, pname = ?, p_stock = ?, price = ?, added_date = ?, image = ? WHERE pid = ?";
-  db.query(
-    query,
-    [cid, bid, sid, pname, p_stock, price, added_date, image, productId],
-    (err, result) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send(err.message);
-      } else {
-        res.status(200).send("Product updated successfully");
-      }
-    }
-  );
-});
-
-app.delete("/products/:productId", (req, res) => {
-  const productId = req.params.productId;
-  const query = "DELETE FROM product WHERE pid = ?";
-  db.query(query, [productId], (err, result) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send(err.message);
-    } else {
-      res.status(200).send("Product deleted successfully");
-    }
-  });
-});
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

@@ -1,10 +1,10 @@
 <% products.forEach(product => { %>
-    <div class="w-full productItem" data-product-name="<%= product.pname %>">
+    <div class="w-full productItem " data-product-name="<%= product.pname %>">
         <div class="w-[90%] mx-auto rounded-lg bg-[#1e1f23] text-[#adadad] flex mt-12 text-center h-16 items-center shadow-lg hover:contrast-125 transition ease-in-out duration-300 cursor-pointer">
             <% if (product.image && product.image.length > 0) { %>
                 <img src="images/databaseImages/<%= product.image %>" alt="<%= product.pname %> DBImage" class="w-[18%] h-16" />
             <% } else { %>
-                <img src="images/shirt.svg" alt="Placeholder Image" class="w-[18%] h-2/3" />
+                <img src="images/product.svg" alt="Placeholder Image" class="w-[18%] h-2/3" />
             <% } %>
             <h5 class="w-[18%]"><%= product.pid %></h5>
             <h5 class="w-[18%]"><%= product.pname %></h5>
