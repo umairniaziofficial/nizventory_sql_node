@@ -43,6 +43,12 @@ app.get('/home', checkAuth, (req, res) => {
     res.render('home');
 });
 
+
+app.get("/products",checkAuth,(req,res)=>
+{
+    res.render("products");
+});
+
 app.get('/logout', (req, res) => {
     res.clearCookie('loggedIn');
     res.redirect('/');

@@ -63,3 +63,22 @@ function startCounter(item, increaseValue, total, intervalTime, counterId) {
     }
   }, intervalTime);
 }
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const aboutLink = document.querySelector('a[href="#About"]');
+  const aboutSection = document.getElementById('About');
+
+  aboutLink.addEventListener('click', function(event) {
+    event.preventDefault();
+
+    const offset = aboutSection.getBoundingClientRect().top + window.scrollY;
+    const centeredOffset = offset - (window.innerHeight / 2) + (aboutSection.clientHeight / 2);
+
+    window.scrollTo({
+      top: centeredOffset,
+      behavior: 'smooth'
+    });
+  });
+});
