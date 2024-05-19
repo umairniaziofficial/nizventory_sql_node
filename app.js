@@ -29,10 +29,10 @@ app.use(cookieParser());
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./public/images");
+    cb(null, "./public/images/databaseImages");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
+    cb(null,file.originalname);
   },
 });
 
@@ -73,8 +73,22 @@ app.get("/insert", checkAuth, (req, res) => {
 });
 
 app.get("/products", checkAuth, (req, res) => {
-  const query =
-    "SELECT pid, cid, bid, sid, pname, p_stock, price, added_date, TO_BASE64(image) AS image FROM product";
+  const query = `
+    SELECT 
+      p.pid,
+      c.category_name AS category,
+      p.bid,
+      p.sid,
+      p.pname,
+      p.p_stock,
+      p.price,
+      p.added_date,
+      p.image
+    FROM 
+      Product p
+    JOIN
+      categories c ON p.cid = c.cid;
+  `;
 
   db.query(query, (err, results) => {
     if (err) {
@@ -98,10 +112,6 @@ app.get("/inventory", checkAuth, (req, res) => {
   });
 });
 
-app.get("/inventory", checkAuth, (req, res) => {
-  res.render("inventory");
-});
-
 app.get("/logout", (req, res) => {
   res.clearCookie("loggedIn");
   res.redirect("/");
@@ -120,9 +130,9 @@ app.get("/products/:productId", (req, res) => {
     }
   });
 });
-
 app.post("/insert", (req, res) => {
-  const { cid, bid, sid, pname, p_stock, price, added_date, image } = req.body;
+  const { cid, bid, sid, pname, p_stock, price, added_date } = req.body;
+  const imageName = req.file ? req.file.originalname : null;
 
   const insertIfNotExist = (table, columnName, value, callback) => {
     const checkQuery = `SELECT * FROM ${table} WHERE ${columnName} = ?`;
@@ -150,33 +160,30 @@ app.post("/insert", (req, res) => {
 
   insertIfNotExist("categories", "cid", cid, (err) => {
     if (err) {
-      res.status(500).send("Error creating product");
-      return;
+      return res.status(500).send(err.message);
     }
 
     insertIfNotExist("brands", "bid", bid, (err) => {
       if (err) {
-        res.status(500).send("Error creating product");
-        return;
+        return res.status(500).send(err.message);
       }
 
       insertIfNotExist("stores", "sid", sid, (err) => {
         if (err) {
-          res.status(500).send("Error creating product");
-          return;
+          return res.status(500).send(err.message);
         }
 
         const insertProductQuery =
           "INSERT INTO product (cid, bid, sid, pname, p_stock, price, added_date, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         db.query(
           insertProductQuery,
-          [cid, bid, sid, pname, p_stock, price, added_date, image],
+          [cid, bid, sid, pname, p_stock, price, added_date, imageName],
           (err, result) => {
             if (err) {
               console.error(err);
-              res.status(500).send("Error creating product");
+              return res.status(500).send(err.message);
             } else {
-              res.status(201).send("Product created successfully");
+              return res.status(201).send("Product created successfully");
             }
           }
         );
@@ -196,7 +203,7 @@ app.put("/products/:productId", (req, res) => {
     (err, result) => {
       if (err) {
         console.error(err);
-        res.status(500).send("Error updating product");
+        res.status(500).send(err.message);
       } else {
         res.status(200).send("Product updated successfully");
       }
@@ -210,7 +217,7 @@ app.delete("/products/:productId", (req, res) => {
   db.query(query, [productId], (err, result) => {
     if (err) {
       console.error(err);
-      res.status(500).send("Error deleting product");
+      res.status(500).send(err.message);
     } else {
       res.status(200).send("Product deleted successfully");
     }
@@ -218,5 +225,5 @@ app.delete("/products/:productId", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("Server is running on http://localhost:${PORT}");
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
