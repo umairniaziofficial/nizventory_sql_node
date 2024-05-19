@@ -49,6 +49,11 @@ app.get("/products",checkAuth,(req,res)=>
     res.render("products");
 });
 
+app.get("/inventory",checkAuth,(req,res)=>
+{
+    res.render("inventory")
+});
+
 app.get('/logout', (req, res) => {
     res.clearCookie('loggedIn');
     res.redirect('/');
