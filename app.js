@@ -450,6 +450,19 @@ app.post('/delete/category/:cid', checkAuth, (req, res) => {
   });
 });
 
+app.post('/delete/store/:sid', checkAuth, (req, res) => {
+  const { sid } = req.params;
+  const deleteCategoryQuery = 'DELETE FROM stores WHERE sid = ?';
+
+  db.query(deleteCategoryQuery, [sid], (err, result) => {
+    if (err) {
+      console.error('Error deleting category:', err);
+      res.status(500).send('Error deleting category');
+      return;
+    }
+    res.redirect('/store');
+  });
+});
 app.post('/delete/:pid', checkAuth, (req, res) => {
   const { pid } = req.params;
   const deleteQuery = 'DELETE FROM Product WHERE pid = ?';

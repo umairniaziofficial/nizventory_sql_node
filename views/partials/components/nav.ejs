@@ -5,9 +5,15 @@
         <a href="/products">Products</a>
         <a href="/inventory">Inventory</a>
         <a href="#About">About Us</a>
-        <div class="relative">
-            <i class="fas fa-search absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
-            <input type="text" placeholder="Search here" class="outline-none pl-8 rounded-lg py-1 bg-[#1B1C20] text-gray-300">
+        <div class="relative flex">
+           
+           <div class="relative">
+                <i class="fas fa-search absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                <input type="text" placeholder="Search here" class="outline-none pl-8 rounded-lg py-1 bg-[#1B1C20] text-gray-300">
+           </div>
+           <form action="/logout" method="get" class="flex items-center justify-center">
+            <button class="bg-myGreen mx-2 py-1 px-2 text-black rounded-xl hover:opacity-75 transition ease-in-out duration-300">Logout</button>
+        </form>
         </div>
     </div>
 </div>
