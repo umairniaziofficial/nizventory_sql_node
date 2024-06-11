@@ -239,7 +239,7 @@ app.post("/insert", (req, res) => {
               console.error(err);
               return res.status(500).send(err.message);
             } else {
-              return res.status(201).send("Product created successfully");
+              return res.redirect("/products");
             }
           }
         );
@@ -372,7 +372,7 @@ app.post("/category", (req, res) => {
       console.error(err);
       return res.status(500).send("Error adding category");
     } else {
-      return res.redirect("/inventory");
+      return res.redirect("/category");
     }
   });
 });
@@ -451,7 +451,7 @@ app.post("/brand", (req, res) => {
       console.error(err);
       return res.status(500).send("Error adding brand");
     } else {
-      return res.status(201).send("Brand added successfully");
+      return res.redirect("/brand");
     }
   });
 });
@@ -528,7 +528,7 @@ app.post("/store", (req, res) => {
       console.error(err);
       return res.status(500).send("Error adding store");
     } else {
-      return res.status(201).send("Store added successfully");
+      return res.redirect("/store");
     }
   });
 });

@@ -5,23 +5,23 @@
             <% if (pageTitle.toLowerCase() === "category" || pageTitle.toLowerCase() === "brand") { %>
                 <div>
                     <label for="pname" class="text-white mb-2">Enter new <%= pageTitle %> name here:</label>
-                    <input type="text" id="pname" name="pname" required
+                    <input type="text" id="pname" name="pname" required placeholder="Enter <%= pageTitle %> name here"
                       class="mt-3 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
                 </div>
             <% } else { %>
                 <div>
-                    <label for="name" class="text-white">Enter new <%= pageTitle %> name here:</label>
-                    <input type="text" id="sname" name="sname" required
+                    <label for="sname" class="text-white">Enter new <%= pageTitle %> name here:</label>
+                    <input type="text" id="sname" name="sname" required placeholder="Enter <%= pageTitle %> name here"
                       class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
                 </div>
                 <div>
-                    <label for="name" class="text-white">Enter <%= pageTitle %> Address: </label>
-                    <input type="text" id="saddress" name="saddress" required
+                    <label for="saddress" class="text-white">Enter <%= pageTitle %> Address:</label>
+                    <input type="text" id="saddress" name="saddress" required placeholder="Enter <%= pageTitle %> address here"
                       class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
                 </div>
                 <div>
-                    <label for="name" class="text-white">Enter <%= pageTitle %> phone number:</label>
-                    <input type="number" id="snumber" name="snumber" required
+                    <label for="snumber" class="text-white">Enter <%= pageTitle %> phone number:</label>
+                    <input type="number" id="snumber" name="snumber" required placeholder="Enter <%= pageTitle %> phone number here"
                       class="mt-1 px-3 py-2 bg-[#41444d] text-white rounded-lg w-full outline-none" />
                 </div>
             <% } %>
