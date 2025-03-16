@@ -13,12 +13,283 @@ const db = mysql.createConnection({
   database: "demo",
 });
 
+// Database initialization function
+const initializeDatabase = async () => {
+  return new Promise((resolve, reject) => {
+    // Check if tables exist by querying the information_schema
+    db.query(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'demo' AND table_name = 'product'",
+      (err, results) => {
+        if (err) {
+          return reject(err);
+        }
+        
+        // If product table doesn't exist, create all tables and insert demo data
+        if (results[0].count === 0) {
+          console.log("Database tables not found. Creating tables and inserting demo data...");
+          
+          // SQL for creating tables
+          const createTablesSQL = `
+            -- Creating Tables
+            CREATE TABLE brands (
+                bid INT AUTO_INCREMENT PRIMARY KEY,
+                bname VARCHAR(20)
+            );
+
+            CREATE TABLE inv_user (
+                user_id VARCHAR(20) PRIMARY KEY,
+                name VARCHAR(20),
+                password VARCHAR(20),
+                last_login TIMESTAMP,
+                user_type VARCHAR(10)
+            );
+
+            CREATE TABLE categories (
+                cid INT AUTO_INCREMENT PRIMARY KEY,
+                category_name VARCHAR(20)
+            );
+
+            CREATE TABLE stores (
+                sid INT AUTO_INCREMENT PRIMARY KEY,
+                sname VARCHAR(20),
+                address VARCHAR(50),
+                mobno VARCHAR(10)
+            );
+
+            CREATE TABLE product (
+                pid INT AUTO_INCREMENT PRIMARY KEY,
+                cid INT,
+                bid INT,
+                sid INT,
+                pname VARCHAR(20),
+                p_stock INT,
+                price DECIMAL(10, 2),
+                added_date DATE,
+                image VARCHAR(255),
+                FOREIGN KEY (cid) REFERENCES categories(cid),
+                FOREIGN KEY (bid) REFERENCES brands(bid),
+                FOREIGN KEY (sid) REFERENCES stores(sid)
+            );
+
+            CREATE TABLE provides (
+                bid INT,
+                sid INT,
+                discount DECIMAL(5, 2),
+                FOREIGN KEY (bid) REFERENCES brands(bid),
+                FOREIGN KEY (sid) REFERENCES stores(sid)
+            );
+
+            CREATE TABLE customer_cart (
+                cust_id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(20),
+                mobno VARCHAR(10)
+            );
+
+            CREATE TABLE select_product (
+                cust_id INT,
+                pid INT,
+                quantity INT,
+                FOREIGN KEY (cust_id) REFERENCES customer_cart(cust_id),
+                FOREIGN KEY (pid) REFERENCES product(pid)
+            );
+
+            CREATE TABLE transaction (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                total_amount DECIMAL(10, 2),
+                paid DECIMAL(10, 2),
+                due DECIMAL(10, 2),
+                gst DECIMAL(5, 2),
+                discount DECIMAL(5, 2),
+                payment_method VARCHAR(10),
+                cart_id INT,
+                FOREIGN KEY (cart_id) REFERENCES customer_cart(cust_id)
+            );
+
+            CREATE TABLE invoice (
+                item_no INT,
+                product_name VARCHAR(20),
+                quantity INT,
+                net_price DECIMAL(10, 2),
+                transaction_id INT,
+                FOREIGN KEY (transaction_id) REFERENCES transaction(id)
+            );
+          `;
+          
+          // SQL for creating procedures and triggers
+          const createProceduresAndTriggersSQL = `
+            -- Procedures
+            CREATE PROCEDURE get_due_amount(IN c_id INT)
+            BEGIN
+                DECLARE due1 DECIMAL(10, 2);
+                SELECT due INTO due1 FROM transaction WHERE cart_id = c_id;
+                SELECT due1 AS due_amount;
+            END;
+
+            CREATE PROCEDURE show_products()
+            BEGIN
+                DECLARE done INT DEFAULT 0;
+                DECLARE p_id INT;
+                DECLARE p_name VARCHAR(20);
+                DECLARE p_stock INT;
+                DECLARE cur CURSOR FOR SELECT pid, pname, p_stock FROM product;
+                DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+                OPEN cur;
+                read_loop: LOOP
+                    FETCH cur INTO p_id, p_name, p_stock;
+                    IF done THEN
+                        LEAVE read_loop;
+                    END IF;
+                    SELECT CONCAT(p_id, ' ', p_name, ' ', p_stock) AS product_details;
+                END LOOP;
+
+                CLOSE cur;
+            END;
+
+            CREATE PROCEDURE check_stock(IN b INT)
+            BEGIN
+                DECLARE a INT;
+                SELECT p_stock INTO a FROM product WHERE pid = b;
+                IF a < 2 THEN
+                    SELECT 'Stock is Less' AS stock_status;
+                ELSE
+                    SELECT 'Enough Stock' AS stock_status;
+                END IF;
+            END;
+
+            -- Triggers
+            CREATE TRIGGER after_select_product_insert
+            AFTER INSERT ON select_product
+            FOR EACH ROW
+            BEGIN
+                UPDATE product
+                SET p_stock = p_stock - NEW.quantity
+                WHERE pid = NEW.pid;
+            END;
+
+            CREATE TRIGGER after_transaction_update
+            AFTER UPDATE ON transaction
+            FOR EACH ROW
+            BEGIN
+                IF NEW.paid != OLD.paid THEN
+                    UPDATE transaction
+                    SET due = total_amount - paid
+                    WHERE id = NEW.id;
+                END IF;
+            END;
+          `;
+          
+          // SQL for inserting demo data
+          const insertDemoDataSQL = `
+            -- Insert demo data into stores
+            INSERT INTO stores (sname, address, mobno) VALUES 
+            ('Store One', '123 Main St, Cityville', '1234567890'),
+            ('Store Two', '456 High St, Townsville', '0987654321'),
+            ('Store Three', '789 Market St, Villagetown', '1122334455');
+
+            -- Insert demo data into categories
+            INSERT INTO categories (category_name) VALUES 
+            ('Electronics'),
+            ('Clothing'),
+            ('Groceries');
+
+            -- Insert demo data into brands
+            INSERT INTO brands (bname) VALUES 
+            ('Brand A'),
+            ('Brand B'),
+            ('Brand C');
+
+            -- Insert demo data into products
+            INSERT INTO product (cid, bid, sid, pname, p_stock, price, added_date) VALUES 
+            (1, 1, 1, 'Smartphone', 50, 299.99, '2023-05-20'),
+            (2, 2, 2, 'Jeans', 100, 49.99, '2023-05-21'),
+            (3, 3, 3, 'Apple', 200, 0.99, '2023-05-22');
+          `;
+          
+          // Execute the SQL statements in sequence
+          db.query(createTablesSQL, (err) => {
+            if (err) {
+              console.error("Error creating tables:", err);
+              return reject(err);
+            }
+            
+            // Create procedures and triggers with individual statements
+            // Using promise-based execution to handle multiple statements
+            const executeProceduresAndTriggers = () => {
+              return new Promise((resolveProc, rejectProc) => {
+                // Split by procedure/trigger definition
+                const stmts = createProceduresAndTriggersSQL.split(';');
+                
+                let currentIndex = 0;
+                const executeNextStatement = () => {
+                  if (currentIndex >= stmts.length) {
+                    resolveProc();
+                    return;
+                  }
+                  
+                  const stmt = stmts[currentIndex].trim();
+                  currentIndex++;
+                  
+                  if (!stmt) {
+                    executeNextStatement();
+                    return;
+                  }
+                  
+                  db.query(stmt + ';', (err) => {
+                    if (err) {
+                      console.error(`Error executing statement: ${stmt}`, err);
+                      rejectProc(err);
+                      return;
+                    }
+                    executeNextStatement();
+                  });
+                };
+                
+                executeNextStatement();
+              });
+            };
+            
+            executeProceduresAndTriggers()
+              .then(() => {
+                // Insert demo data
+                db.query(insertDemoDataSQL, (err) => {
+                  if (err) {
+                    console.error("Error inserting demo data:", err);
+                    return reject(err);
+                  }
+                  
+                  console.log("Database initialized successfully with tables and demo data!");
+                  resolve();
+                });
+              })
+              .catch((err) => {
+                reject(err);
+              });
+          });
+        } else {
+          console.log("Database tables already exist.");
+          resolve();
+        }
+      }
+    );
+  });
+};
+
 db.connect((err) => {
   if (err) {
     console.error("Database connection failed:", err.stack);
     return;
   }
   console.log("Connected to database.");
+  
+  // Initialize database after connection
+  initializeDatabase()
+    .then(() => {
+      console.log("Database initialization complete.");
+    })
+    .catch((err) => {
+      console.error("Error initializing database:", err);
+    });
 });
 
 app.set("view engine", "ejs");
